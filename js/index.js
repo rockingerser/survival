@@ -203,7 +203,7 @@
     var score = 0;
     player.x = Math.round(w / 2 - (player.r / 2));
     player.y = Math.round(h / 2 - (player.r / 2));
-    var frames = 100000;
+    var frames = -1;
     var rgf = 0;
     const help = ['Usa WASD o las flechas, dispara con el ratón.', 'Elimina a los círculos enemigos.'];
     var ha = 10;
