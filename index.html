@@ -1,12 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-	<title>Survive!</title>
-	<link rel="shorcut icon" href="../juegos-rockingerser/favicon.ico">
+	<title>¡Sobrevive!</title>
+	<link rel="stylesheet" href="style/index.css">
+	<meta charset="utf-8">
 </head>
 <body>
-	<canvas></canvas>
+	<canvas>Lo sentimos... Pero parece que tu navegador no es compatible con la etiqueta <code>&lt;canvas&gt;</code>.</canvas>
+
+	<!-- favicon.js: Crea un elemento <canvas> que se ejecuta en pleno segundo plano, es invisible para DevTools (No se muestra en la pestaña "Elementos"), y cambia el ícono de la página con el contenido de este. -->
+	<script src="js/favicon.js"></script>
+	<!-- index.js: El que se encarga de renderizar todo el contenido del juego, como enemigos, el jugador, la barra de salud, ¡Y más! -->
 	<script src="js/index.js"></script>
-	<link rel="stylesheet" href="style/index.css">
 </body>
 </html>

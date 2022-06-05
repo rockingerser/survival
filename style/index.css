@@ -2,6 +2,11 @@ body {
 	margin: 0;
 	overflow: hidden;
 }
+code {
+	background: #80808040;
+	border-radius: 6px;
+	padding: 4px;
+}
 canvas {
 	image-rendering: pixelated;
 	width: 100vw;
