@@ -5,7 +5,7 @@
     const c = canvas.getContext('2d', {
         alpha: false
     });
-    canvas.style.cursor = `url('cursors/shoot.png') 16 16, auto`;
+    
     var w;
     var h;
     const keys = {};
@@ -30,6 +30,9 @@
     }
     canvasResize();
     window.addEventListener('resize', canvasResize);
+    window.onbeforeunload = e=> {
+    	return false;
+    }
     function loadSound(u) {
         var sound = new Audio();
         sound.src = u;
@@ -136,18 +139,19 @@
                 sounds.shoot.play();
                 enemies.push(new Bullet(this.c,this.x,this.y,this.r / 3,this.v * 3.3333333333333333,dir,0));
             }
-
-            if (Math.random() * 30 <= 1 && colliding(this, player)) {
+            if (Math.random() * 10 <= 1 && colliding(this, player)) {
                 rgf = 15 * 60;
+                player.vx += Math.sin(dir) * (this.v** 2 + 1);
+                player.vy += Math.cos(dir) * (this.v** 2 + 1);
                 sounds.hurt.play();
-                player.h -= 2 + Math.random() * 6;
+                player.h -= 2 + Math.random() * 4;
             }
 
             this.c.textAlign = 'center';
             this.c.fillStyle = 'black';
             this.c.font = '12px courier';
             this.c.fillText('PV:' + Math.ceil(this.hp), this.x, this.y - (this.r * 1.5));
-            var color = Math.floor(0xff0000 + this.offsetColor % 2 ** 24).toString(16);
+            var color = Math.floor((0xff0000 + this.offsetColor) % 2 ** 24).toString(16);
             this.c.fillStyle = ('#000000').substring(0, 7 - color.length) + color;
             if (this.hp <= 0) {
                 score += Math.round(50 + (frames / 200));
@@ -199,27 +203,31 @@
     var score = 0;
     player.x = Math.round(w / 2 - (player.r / 2));
     player.y = Math.round(h / 2 - (player.r / 2));
-    var frames = -1;
+    var frames = 100000;
     var rgf = 0;
     const help = ['Usa WASD o las flechas, dispara con el ratón.', 'Elimina a los círculos enemigos.'];
     var ha = 10;
     var haActive = false;
     var last69key;
     var mySt = 0;
+    var rqstAnimFrame;
     function spawnEnemy() {
     	enemies.push(new Enemy(Math.random() * w,Math.random() * h, 8 * (frames / 15000 + 1), 0.3 * (frames / 15000 + 1),Math.round(30 * (frames / 6000 + 1))));
     }
+    function canMove() {
+    	return player.s <= 0 && player.h > 0;
+    }
     function draw() {
         frames++;
-        if (mySt !== player.s && (player.s > 0 && mySt <= 0) || player.s <= 0)
+        if (mySt !== player.s && (player.s > 0 && mySt <= 0) || player.s <= 0 || player.s > mySt)
         	mySt = player.s;
         background('white');
-        if (Math.random() * 1000 <= 1)
+        if (Math.random() * 300 <= 1)
             spawnEnemy();
-        (player.s <= 0) ? c.fillStyle = '#17DF1F' : c.fillStyle = 'black';
+        
         if (keyPressed(69) && last69key && ha > 0)
             haActive = !haActive;
-        if (player.s <= 0 && mousePressed(0) && ft <= 0 || (haActive && player.s <= 0)) {
+        if (canMove() && mousePressed(0) && ft <= 0 || (haActive && canMove())) {
             if (haActive) {
                 ha--;
                 if (ha <= 0)
@@ -229,21 +237,22 @@
             enemies.push(new Bullet(c,player.x, player.y,player.r / 3,5,Math.atan2(mouse.x - (player.x), mouse.y - (player.y)),1));
         } else
             ft--;
-        if (rgf <= 0 && player.h < player.maxh)
+        if (rgf <= 0 && player.h < player.maxh && player.h > 0)
             player.h += 0.03;
         else
             rgf--;
         if (player.h > player.maxh)
             player.h = player.maxh;
-        c.fillCircle(Math.round(player.x), Math.round(player.y), Math.round(player.r));
+        
         player.vx *= player.friction;
         player.vy *= player.friction;
 
-        if (player.s <= 0) {
+        if (canMove()) {
             player.vx += ((keyPressed(39) || keyPressed(68)) - (keyPressed(37) || keyPressed(65))) * player.speed;
             player.vy += ((keyPressed(40) || keyPressed(83)) - (keyPressed(38) || keyPressed(87))) * player.speed;
         } else
             player.s--;
+        if (canMove()) {
         if (player.vx < -player.maxv)
         	player.vx = -player.maxv;
         else if (player.vx > player.maxv)
@@ -252,7 +261,9 @@
         	player.vy = -player.maxv;
         else if (player.vy > player.maxv)
         	player.vy = player.maxv;
+        }
             player.x += player.vx;
+        
             if (collidingEdges(player)) {
             	player.x -= player.vx;
             	player.vx = -player.vx;
@@ -265,6 +276,8 @@
         
         for (var en of enemies)
             en.step();
+        (canMove()) ? c.fillStyle = '#17DF1F' : c.fillStyle = 'black';
+        c.fillCircle(Math.round(player.x), Math.round(player.y), Math.round(player.r));
         enemies = enemies.filter(Boolean);
         last69key = !keyPressed(69);
         c.font = '16px helvetica neue, helvetica, arial, sans-serif';
@@ -272,7 +285,7 @@
         //c.fillText('Salud: ' + Math.ceil(player.h), 10, 20);
         c.fillStyle = 'black';
         var outline = 2
-        c.fillRect(10 - outline, 10 - outline, 300 + (outline * 2), 16 + (outline * 2));
+        c.fillRect(10 - outline, 10 - outline, 400 + (outline * 2), 16 + (outline * 2));
         if (mySt > 0) {
         	c.fillRect(10 - outline, 26 + outline, 240 + (outline * 2), 16 + (outline * 2 - 2));
         	c.fillStyle = 'white';
@@ -288,7 +301,7 @@
             c.fillStyle = 'orange';
         else
         	c.fillStyle = 'red';
-        c.fillRect(10, 10, Math.round(Math.max(0, 300 * (numHealth))), 16);
+        c.fillRect(10, 10, Math.round(Math.max(0, 400 * (numHealth))), 16);
         c.fillStyle = 'black';
         c.fillText('Metralleta: ' + ha + ' balas (Pulsa E para activar/desactivar)', 7, 50 + ((mySt > 0) * 18));
         if (help[Math.floor(frames / (4 * 60))] !== undefined) {
@@ -297,20 +310,31 @@
         }
         c.textAlign = 'right';
         c.fillText('Puntuación: ' + score, w - 10, 20);
+        c.fillText('Tiempo: ' + Math.floor(frames / 60), w - 10, 40);
+
+         if (player.s > 0 && mySt !== player.s)
+            	canvas.style.cursor = 'not-allowed';
+            else if (mySt === 0)
+            	canvas.style.cursor = `url('cursors/shoot.png') 16 16, auto`;
+
         if (player.h <= 0) {
         	c.textAlign = 'center';
         	c.font = '30px helvetica neue, helvetica, arial, sans-serif';
             c.fillText('Perdiste... Pulsa R para volver a intentarlo.', w / 2, h / 2);
             document.addEventListener('keydown', e=>{
-                if (e.key === 'r')
+                if (e.key === 'r') {
+                    window.cancelAnimationFrame(rqstAnimFrame);
                     window.location.reload();
+                }
             });
             window.removeEventListener('resize', canvasResize);
-        } else
-            window.requestAnimationFrame(draw);
+            window.onbeforeunload = null;
+            canvas.style.cursor = 'default';
+        }
+        rqstAnimFrame = window.requestAnimationFrame(draw);
     }
     draw();
 
-    for (var i = 0; i < 20; i++)
+    for (var i = 0; i < 5; i++)
         spawnEnemy();
 }();
