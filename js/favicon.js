@@ -1,3 +1,4 @@
+!function() {
 const canvas = document.createElement('canvas');
 const c = canvas.getContext('2d');
 canvas.width = canvas.height = 16;
@@ -17,3 +18,4 @@ render();
 setInterval(render, 2000);
 
 document.head.appendChild(fav);
+}
