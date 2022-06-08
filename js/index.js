@@ -26,8 +26,8 @@
         c.stroke();
     }
     function canvasResize() {
-        w = canvas.width = window.innerWidth;
-        h = canvas.height = window.innerHeight;
+        w = canvas.width = window.innerWidth * window.devicePixelRatio;
+        h = canvas.height = window.innerHeight * window.devicePixelRatio;
     }
     canvasResize();
     window.addEventListener('resize', canvasResize);
@@ -57,15 +57,15 @@
         else {
             mouse[which] = false;
             Function('mouse', `
-			document.addEventListener('mousedown', e=> {
-			    if (e.button === ${which})
-			        mouse[${which}] = true;
-			});
-			document.addEventListener('mouseup', e=> {
-			    if (e.button === ${which})
-			        mouse[${which}] = false;
-			});
-		    `)(mouse);
+            document.addEventListener('mousedown', e=> {
+                if (e.button === ${which})
+                    mouse[${which}] = true;
+            });
+            document.addEventListener('mouseup', e=> {
+                if (e.button === ${which})
+                    mouse[${which}] = false;
+            });
+            `)(mouse);
             return mousePressed(which);
         }
     }
@@ -75,15 +75,15 @@
         else {
             keys[kc] = false;
             Function('keys', `
-			document.addEventListener('keydown', e=> {
-			    if (e.keyCode === ${kc})
-			        keys[${kc}] = true;
-			});
-			document.addEventListener('keyup', e=> {
-			    if (e.keyCode === ${kc})
-			        keys[${kc}] = false;
-			});
-		    `)(keys);
+            document.addEventListener('keydown', e=> {
+                if (e.keyCode === ${kc})
+                    keys[${kc}] = true;
+            });
+            document.addEventListener('keyup', e=> {
+                if (e.keyCode === ${kc})
+                    keys[${kc}] = false;
+            });
+            `)(keys);
             return keyCode(kc);
         }
     }
@@ -106,6 +106,8 @@
         maxv: 5,
         r: 13,
         s: 0,
+        baseSt: 0,
+        baseStam: null,
         h: 100,
         speed: 0.5,
         firerate: 10,
@@ -140,11 +142,33 @@
     function canMove(o) {
         return o.s <= 0 && o.h > 0;
     }
-    function stun(o, t) {
-        o.s = t;
+    function stun(o, v) {
+        if (canMove(o))
+            o.s = v;
+    }
+    function damage(o, v) {
+        if (o instanceof Enemy)
+            sounds.hurtEnemy.play();
+        else {
+
+            rgf = 15 * 60;
+            sounds.hurt.play();
+        }
+        o.h -= v;
     }
     function showHealth(o) {
-        c.drawBar(o.x - (o.r * 1.5), o.y - (o.r * 1.5), o.r * 3, o.r / 4, `hsl(${o.h / o.mh * 100}, 100%, 50%)`, Math.max(0, o.h / o.mh), 1, 'black');
+        var r = o.r * 1.5
+          , x = o.x - r
+          , y = o.y - r
+          , w = o.r * 3
+          , h = o.r / 4;
+        var outline = 1;
+        var another = ()=>y -= h + (r / 4);
+        c.drawBar(x, y, w, h, `hsl(${o.h / o.mh * 100}, 100%, 50%)`, Math.max(0, o.h / o.mh), outline, 'black');
+        if (o.baseSt > 0) {
+            another();
+            c.drawBar(x, y, w, h, 'white', o.s / o.baseSt, outline, 'black');
+        }
     }
     class Damage {
         constructor(ct, x, y, h) {
@@ -182,18 +206,30 @@
             this.v = Math.min(player.maxv - 0.1, v);
             this.h = h;
 
-            this.offsetColor = frames;
-            this.type = Number(Math.random() > 0.75);
+            this.offsetColor = enemyFr;
+            this.type = Math.random();
+            if (this.type > 0.35)
+                this.type = 0;
+            else if (this.type > 0.1)
+                this.type = 1;
+            else
+                this.type = 2;
             this.colchan = 0;
             this.s = 0;
+            this.baseSt = 0;
             if (this.type === 1)
                 this.h *= 2;
+            else if (this.type === 2) {
+                this.v *= 0.5;
+                this.h *= 3;
+            }
             this.lh = this.h;
             this.mh = this.h;
             this.dir = Math.random() * 360;
-            this.stunThenShoot = false;
         }
         step() {
+            if (this.baseSt !== this.s && (this.s > 0 && this.baseSt <= 0) || this.s <= 0 || this.s > this.baseSt)
+                this.baseSt = this.s;
             var dir = Math.atan2(player.x - this.x, player.y - this.y);
             this.dir = dir;
             var typeShot = Number(Math.random() < 0.5);
@@ -210,30 +246,33 @@
             if (canMove(this)) {
                 this.x += Math.sin(this.dir) * this.v;
                 this.y += Math.cos(this.dir) * this.v;
-                if (Math.random() <= 0.004 || (this.stunThenShoot && player.s > 0)) {
-                    var type = (this.stunThenShoot) ? 0 : typeShot;
+                if (this.type !== 2 && Math.random() <= 0.004) {
                     sounds.shoot.play();
-                    this.stunThenShoot = false;
-                    if (Math.random() < 0.3 && !this.stunThenShoot) {
-                        shoot(this, this.v * 10.3333333333333333, 0.01, 1);
-                        this.stunThenShoot = true;
-                    } else if (this.type === 1) {
+                    if (this.type === 1) {
                         var nshots = 10;
                         for (var i = 0; i < nshots; i++) {
-                            shoot(this, this.v * 6.3333333333333333, 0.1, type);
+                            shoot(this, this.v * 6.3333333333333333, 0.1, typeShot);
                         }
                     } else
-                        shoot(this, this.v * 10.3333333333333333, 0.01, type);
+                        shoot(this, this.v * 10.3333333333333333, 0.01, typeShot);
                 }
 
-                if (Math.random() <= -0.1 && colliding(this, player)) {
+                if (colliding(this, player))
+                    if (this.type === 2)
+                        if (Math.random() <= 0.2) {
+                            player.vx += Math.sin(dir) * ((this.v + 1) * 4);
+                            player.vy += Math.cos(dir) * ((this.v + 1) * 4);
 
-                    player.vx += Math.sin(dir) * (this.v ** 2 + 1);
-                    player.vy += Math.cos(dir) * (this.v ** 2 + 1);
-                    rgf = 15 * 60;
-                    sounds.hurt.play();
-                    player.h -= 0.5 + Math.random() * 2;
-                }
+                            stun(player, 3 * 60);
+                            damage(player, 20);
+
+                        } else if (Math.random() <= -0.1) {
+                            player.vx += Math.sin(dir) * ((this.v + 1) ** 2);
+                            player.vy += Math.cos(dir) * ((this.v + 1) ** 2);
+
+                            damage(player, 0.5 + Math.random() * 2);
+                        }
+
             }
 
             if (this.h <= 0) {
@@ -241,13 +280,13 @@
                 sounds.kill.play();
                 ha += 50;
                 if (Math.random() < 0.3)
-                    sb += 10;
+                    sb += 1;
                 deleteMe(this);
             }
             this.c.fillCircle(Math.round(this.x), Math.round(this.y), Math.round(this.r));
-            if (this.type === 1) {
+            if (this.type >= 1) {
                 if (canMove(this))
-                    this.c.fillStyle = 'yellow';
+                    this.c.fillStyle = (this.type === 2) ? 'orange' : 'yellow';
                 this.c.fillCircle(Math.round(this.x), Math.round(this.y), Math.round(this.r / 2));
             }
             if (this.colchan > 0) {
@@ -280,15 +319,14 @@
             this.y += Math.cos(dir) * this.v;
             if (this.t === 0)
                 if (colliding(this, player)) {
+                    player.vx += Math.sin(dir) * (this.v);
+                    player.vy += Math.cos(dir) * (this.v);
 
                     if (this.val === 0) {
-                        rgf = 15 * 60;
-                        sounds.hurt.play();
-                        player.h -= 2 + Math.random() * 4;
-                        player.vx += Math.sin(dir) * (this.v);
-                        player.vy += Math.cos(dir) * (this.v);
+                        damage(player, 2 + Math.random() * 4);
+
                     } else
-                        stun(player, 1 * 60);
+                        stun(player, 0.5 * 60);
                     this.destroy = true;
                 }// To avoid some Javascript bugs
                 else {}
@@ -296,19 +334,16 @@
                 var ens = enemies.filter(enemy=>enemy instanceof Enemy);
                 for (let en of ens)
                     if (colliding(this, en)) {
-                        if (this.val === 0) {
-
-                            sounds.hurtEnemy.play();
-                            en.h -= 2 + Math.random() * 4;
-                        } else
-                            stun(en, 1 * 60);
+                        if (this.val === 0)
+                            damage(en, 2 + Math.random() * 4);
+                        else
+                            stun(en, 3 * 60);
                         this.destroy = true;
                     }
             }
             if (collidingEdges(this) || this.destroy)
                 deleteMe(this);
             this.c.strokeStyle = this.c.fillStyle = this.color;
-            //'tomato';
             this.c.lineWidth = this.r * 1.2;
             if (this.val === 0)
                 this.c.fillCircle(Math.round(this.x), Math.round(this.y), Math.round(this.r));
@@ -321,16 +356,16 @@
     player.x = Math.round(w / 2 - (player.r / 2));
     player.y = Math.round(h / 2 - (player.r / 2));
     var frames = -1;
+    var enemyFr = frames;
     var rgf = 0;
-    const help = ['Usa WASD o las flechas, dispara con el ratón,', 'presiona SHIFT para correr.', 'Elimina a los círculos enemigos.'];
+    const help = ['Usa WASD o las flechas, dispara con el ratón,', 'presiona SHIFT para correr.', 'Elimina a los círculos enemigos.', 'El juego se va complicando a medida que vas avanzando.'];
     var ha = 10;
-    var sb = 10;
+    var sb = 5;
     var haActive = false;
     var last69key, last32key, last48key, last49key;
-    var mySt = 0;
     var rqstAnimFrame;
     var lose = false;
-    var myStam = player.stam;
+    player.baseStam = player.stam;
     var sprinting;
     var move = {
         left: null,
@@ -340,7 +375,7 @@
         moving: null
     }
     function spawnEnemy() {
-        enemies.push(new Enemy(Math.random() * w,Math.random() * h,8 * (frames / 15000 + 1),0.3 * (frames / 15000 + 1),Math.round(30 * (frames / 6000 + 1))));
+        enemies.push(new Enemy(Math.random() * w,Math.random() * h,8 * (enemyFr / 15000 + 1),0.3 * (enemyFr / 15000 + 1),Math.round(enemyFr / 6000 + 1)));
     }
     player.lh = player.h;
     player.colchan = 0;
@@ -363,6 +398,7 @@
             recFrames++;
         } else {
             frames++;
+            enemyFr++;
             var shoot = function(o, type) {
                 enemies.push(new Bullet(c,o.x,o.y,o.r / 3,5,Math.atan2(mouse.x - (o.x), mouse.y - (o.y)),1,type,c.fillStyle,0.03));
             }
@@ -372,10 +408,10 @@
             move.up = keyCode(38) || keyCode(87);
             move.moving = move.right || move.left || move.down || move.up;
             sprinting = keyCode(16) && player.stam && canMove(player) && move.moving;
-            if (player.stam < myStam && (!keyCode(16) && canMove(player)))
+            if (player.stam < player.baseStam && (!keyCode(16) && canMove(player)))
                 player.stam++;
-            if (mySt !== player.s && (player.s > 0 && mySt <= 0) || player.s <= 0 || player.s > mySt)
-                mySt = player.s;
+            if (player.baseSt !== player.s && (player.s > 0 && player.baseSt <= 0) || player.s <= 0 || player.s > player.baseSt)
+                player.baseSt = player.s;
             if (Math.random() * 300 <= 1)
                 spawnEnemy();
 
@@ -462,11 +498,11 @@
                 color = '#FF9510';
             else
                 color = 'cyan';
-            c.drawBar(10, 10 + ((16 + outline) * 1), 300, 16, color, Math.max(0, player.stam / myStam), outline, 'black');
-            if (mySt > 0)
-                c.drawBar(10, 10 + ((16 + outline) * 2), 200, 16, 'white', player.s / mySt, outline, 'black');
+            c.drawBar(10, 10 + ((16 + outline) * 1), 300, 16, color, Math.max(0, player.stam / player.baseStam), outline, 'black');
+            if (player.baseSt > 0)
+                c.drawBar(10, 10 + ((16 + outline) * 2), 200, 16, 'white', player.s / player.baseSt, outline, 'black');
             c.fillStyle = 'black';
-            var line = 66 + (mySt > 0) * (16 + outline);
+            var line = 66 + (player.baseSt > 0) * (16 + outline);
             c.fillText('Metralleta: ' + ha + ' balas (Pulsa E para activar/desactivar)', 7, line);
             line += 18;
             c.fillText('Balas aturdidoras: ' + sb + ' balas (Pulsa ESPACIO para disparar una)', 7, line)
@@ -479,9 +515,9 @@
             c.fillText('Puntuación: ' + score, w - 10, 20);
             c.fillText('Tiempo: ' + Math.floor(frames / 60), w - 10, 40);
 
-            if (player.s > 0 && mySt !== player.s)
+            if (player.s > 0 && player.baseSt !== player.s)
                 canvas.style.cursor = "url('cursors/not-allowed.png') 16 16, auto";
-            else if (mySt === 0)
+            else if (player.baseSt === 0)
                 canvas.style.cursor = "url('cursors/shoot.png') 16 16, auto";
 
             if (player.h <= 0) {
@@ -495,7 +531,6 @@
                             window.location.reload();
                     }
                     );
-                    //window.removeEventListener('resize', canvasResize);
                     window.onbeforeunload = null;
                     lose = true;
                 }
@@ -515,6 +550,8 @@
     }
     draw();
 
-    for (var i = 0; i < 10; i++)
+    for (var i = 0; i < 10; i++) {
+        enemyFr++;
         spawnEnemy();
+    }
 }();
