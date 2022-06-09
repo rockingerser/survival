@@ -37,6 +37,10 @@
     function loadSound(u) {
         var sound = new Audio();
         sound.src = u;
+        sound.playme = function() {
+            this.currentTime = 0;
+            this.play();
+        }
         return sound;
     }
     const sounds = {
@@ -143,16 +147,16 @@
         return o.s <= 0 && o.h > 0;
     }
     function stun(o, v) {
-        if (canMove(o))
+        if (v >= o.baseSt)
             o.s = v;
     }
     function damage(o, v) {
         if (o instanceof Enemy)
-            sounds.hurtEnemy.play();
+            sounds.hurtEnemy.playme();
         else {
 
             rgf = 15 * 60;
-            sounds.hurt.play();
+            sounds.hurt.playme();
         }
         o.h -= v;
     }
@@ -164,10 +168,10 @@
           , h = o.r / 4;
         var outline = 1;
         var another = ()=>y -= h + (r / 4);
-        c.drawBar(x, y, w, h, `hsl(${o.h / o.mh * 100}, 100%, 50%)`, Math.max(0, o.h / o.mh), outline, 'black');
+        c.drawBar(x, y, w, h, `hsl(${o.h / o.mh * 100}, 100%, 50%)`, Math.max(0, o.h / o.mh), outline, 'rgba(128, 128, 128, 0.5)');
         if (o.baseSt > 0) {
             another();
-            c.drawBar(x, y, w, h, 'white', o.s / o.baseSt, outline, 'black');
+            c.drawBar(x, y, w, h, 'white', o.s / o.baseSt, outline, 'rgba(128, 128, 128, 0.5)');
         }
     }
     class Damage {
@@ -208,12 +212,20 @@
 
             this.offsetColor = enemyFr;
             this.type = Math.random();
-            if (this.type > 0.35)
+            if (this.type > 0.4)
                 this.type = 0;
-            else if (this.type > 0.1)
+            else if (this.type > 0.2)
                 this.type = 1;
-            else
+            else if (this.type > 0.05)
                 this.type = 2;
+            else {
+                this.type = 3;
+                this.active = false;
+                this.shootData = {
+                    x: Math.random() * w,
+                    y: Math.random * h
+                };
+            }
             this.colchan = 0;
             this.s = 0;
             this.baseSt = 0;
@@ -222,6 +234,9 @@
             else if (this.type === 2) {
                 this.v *= 0.5;
                 this.h *= 3;
+            } else if (this.type === 3) {
+                this.v *= 0.2;
+                this.h *= 0.5;
             }
             this.lh = this.h;
             this.mh = this.h;
@@ -233,12 +248,15 @@
             var dir = Math.atan2(player.x - this.x, player.y - this.y);
             this.dir = dir;
             var typeShot = Number(Math.random() < 0.5);
-            var shoot = function(o, sp, pres, type) {
-                enemies.push(new Bullet(o.c,o.x,o.y,o.r / 3,sp,o.dir,0,type,o.c.fillStyle,pres));
+            var shoot = (o,r,sp,dir,pres,type,dmg,stun)=>enemies.push(new Bullet(o.c,o.x,o.y,r,sp,dir,0,type,o.c.fillStyle,pres,dmg,stun));
+
+            var push = function(v) {
+                player.vx += Math.sin(dir) * v;
+                player.vy += Math.cos(dir) * v;
             }
 
             var color = Math.floor((0x00ff29 + this.offsetColor) % 2 ** 24).toString(16);
-            this.c.fillStyle = (canMove(this)) ? c.fillStyle = ('#000000').substring(0, 7 - color.length) + color : c.fillStyle = 'black';
+            this.c.fillStyle = (canMove(this)) ? c.fillStyle = ('#000000').substring(0, 7 - color.length) + color : c.fillStyle = 'gray';
             if (this.lh !== this.h && this.lh > this.h) {
                 enemies.push(new Damage(this.c,this.x,this.y,decimal(this.h - this.lh, 1)));
                 this.colchan = colchanTime;
@@ -246,38 +264,54 @@
             if (canMove(this)) {
                 this.x += Math.sin(this.dir) * this.v;
                 this.y += Math.cos(this.dir) * this.v;
-                if (this.type !== 2 && Math.random() <= 0.004) {
-                    sounds.shoot.play();
+
+                if (this.type === 3) {
+                    this.c.strokeStyle = (this.active) ? 'rgba(255, 0, 0, 0.25)' : 'rgb(255, 0, 0)';
+                    var lastStroke = this.c.lineWidth;
+                    this.c.lineWidth = this.r / 5;
+                    this.c.drawLine(this.x, this.y, this.shootData.x, this.shootData.y);
+                    this.c.lineWidth = lastStroke;
+                    if (Math.random() < 0.02) {
+                        this.active = true;
+                        this.shootData.x = player.x;
+                        this.shootData.y = player.y;
+                    }
+                }
+
+                if (this.type !== 2 && Math.random() <= 0.004 && this.type !== 3 || (this.active && Math.random() < 0.006)) {
+                    sounds.shoot.playme();
                     if (this.type === 1) {
                         var nshots = 10;
                         for (var i = 0; i < nshots; i++) {
-                            shoot(this, this.v * 6.3333333333333333, 0.1, typeShot);
+                            shoot(this, this.r / 3, this.v * 6, this.dir, 0.1, typeShot, 2 + Math.random() * 4, 1);
                         }
-                    } else
-                        shoot(this, this.v * 10.3333333333333333, 0.01, typeShot);
+                    } else if (this.type === 2)
+                        shoot(this, this.r / 3, this.v * 10, this.dir, 0.04, typeShot, 2 + Math.random() * 4, 2);
+                    else if (this.type === 3) {
+                        this.active = false;
+                        shoot(this, this.r / 1.5, this.v * 150, Math.atan2(this.shootData.x - this.x, this.shootData.y - this.y), 0.01, typeShot, 40, 1.5);
+                    }
                 }
 
                 if (colliding(this, player))
-                    if (this.type === 2)
+                    if (this.type === 2) {
                         if (Math.random() <= 0.2) {
-                            player.vx += Math.sin(dir) * ((this.v + 1) * 4);
-                            player.vy += Math.cos(dir) * ((this.v + 1) * 4);
+                            push((this.v + 1) * 4);
 
                             stun(player, 3 * 60);
                             damage(player, 20);
-
-                        } else if (Math.random() <= -0.1) {
-                            player.vx += Math.sin(dir) * ((this.v + 1) ** 2);
-                            player.vy += Math.cos(dir) * ((this.v + 1) ** 2);
-
-                            damage(player, 0.5 + Math.random() * 2);
                         }
 
+                    } else if (Math.random() <= 0.01) {
+                        push((this.v + 1) ** 2);
+
+                        damage(player, 0.5 + Math.random() * 2);
+                    }
             }
 
             if (this.h <= 0) {
                 score += Math.round(50 + (frames / 200));
-                sounds.kill.play();
+                sounds.kill.playme();
                 ha += 50;
                 if (Math.random() < 0.3)
                     sb += 1;
@@ -286,7 +320,7 @@
             this.c.fillCircle(Math.round(this.x), Math.round(this.y), Math.round(this.r));
             if (this.type >= 1) {
                 if (canMove(this))
-                    this.c.fillStyle = (this.type === 2) ? 'orange' : 'yellow';
+                    this.c.fillStyle = (this.type === 1) ? 'yellow' : (this.type === 2) ? 'orange' : 'red';
                 this.c.fillCircle(Math.round(this.x), Math.round(this.y), Math.round(this.r / 2));
             }
             if (this.colchan > 0) {
@@ -301,7 +335,7 @@
         }
     }
     class Bullet {
-        constructor(ce, x, y, r, v, dir, t, val, color, pres) {
+        constructor(ce, x, y, r, v, dir, t, val, color, pres, dmg, stun) {
             this.c = ce;
             this.x = x;
             this.y = y;
@@ -311,33 +345,34 @@
             this.t = t;
             this.val = val;
             this.color = color;
+            this.dmg = dmg;
+            this.stun = Math.round(stun * 60);
             this.destroy = false;
         }
         step() {
             var dir = this.dir;
             this.x += Math.sin(dir) * this.v;
             this.y += Math.cos(dir) * this.v;
-            if (this.t === 0)
+            if (this.t === 0) {
                 if (colliding(this, player)) {
                     player.vx += Math.sin(dir) * (this.v);
                     player.vy += Math.cos(dir) * (this.v);
 
                     if (this.val === 0) {
-                        damage(player, 2 + Math.random() * 4);
+                        damage(player, this.dmg);
 
                     } else
-                        stun(player, 0.5 * 60);
+                        stun(player, this.stun);
                     this.destroy = true;
-                }// To avoid some Javascript bugs
-                else {}
-            else {
+                }
+            } else {
                 var ens = enemies.filter(enemy=>enemy instanceof Enemy);
                 for (let en of ens)
                     if (colliding(this, en)) {
                         if (this.val === 0)
-                            damage(en, 2 + Math.random() * 4);
+                            damage(en, this.dmg);
                         else
-                            stun(en, 3 * 60);
+                            stun(en, this.stun);
                         this.destroy = true;
                     }
             }
@@ -375,7 +410,7 @@
         moving: null
     }
     function spawnEnemy() {
-        enemies.push(new Enemy(Math.random() * w,Math.random() * h,8 * (enemyFr / 15000 + 1),0.3 * (enemyFr / 15000 + 1),Math.round(enemyFr / 6000 + 1)));
+        enemies.push(new Enemy(Math.random() * w,Math.random() * h,8 * (enemyFr / 15000 + 1),0.3 * (enemyFr / 15000 + 1),Math.round(5 * enemyFr / 6000 + 1)));
     }
     player.lh = player.h;
     player.colchan = 0;
@@ -385,7 +420,7 @@
     var recFrames = 0;
     c.imageSmoothingEnabled = false;
     function draw() {
-        background('white');
+        background('#040404');
         if (keyCode(48) && last48key)
             recording = !recording;
         if (keyCode(49) && last49key) {
@@ -400,7 +435,7 @@
             frames++;
             enemyFr++;
             var shoot = function(o, type) {
-                enemies.push(new Bullet(c,o.x,o.y,o.r / 3,5,Math.atan2(mouse.x - (o.x), mouse.y - (o.y)),1,type,c.fillStyle,0.03));
+                enemies.push(new Bullet(c,o.x,o.y,o.r / 3,5,Math.atan2(mouse.x - (o.x), mouse.y - (o.y)),1,type,c.fillStyle,0.04,2 + Math.random() * 4,5));
             }
             move.right = keyCode(39) || keyCode(68);
             move.left = keyCode(37) || keyCode(65);
@@ -458,7 +493,7 @@
             for (var en of enemies)
                 en.step();
             showHealth(player);
-            (canMove(player)) ? c.fillStyle = '#17DF1F' : c.fillStyle = 'black';
+            (canMove(player)) ? c.fillStyle = '#17DF1F' : c.fillStyle = 'gray';
             if (player.lh !== player.h && player.lh > player.h) {
                 enemies.push(new Damage(c,player.x,player.y,decimal(player.h - player.lh, 1)));
                 player.colchan = colchanTime;
@@ -493,15 +528,15 @@
             var numHealth = player.h / player.mh;
             var color;
             color = `hsl(${player.h / player.mh * 100}, 100%, 50%)`;
-            c.drawBar(10, 10, 400, 16, color, Math.max(0, player.h / player.mh), outline, 'black');
+            c.drawBar(10, 10, 400, 16, color, Math.max(0, player.h / player.mh), outline, 'rgba(128, 128, 128, 0.5)');
             if (sprinting)
                 color = '#FF9510';
             else
                 color = 'cyan';
-            c.drawBar(10, 10 + ((16 + outline) * 1), 300, 16, color, Math.max(0, player.stam / player.baseStam), outline, 'black');
+            c.drawBar(10, 10 + ((16 + outline) * 1), 300, 16, color, Math.max(0, player.stam / player.baseStam), outline, 'rgba(128, 128, 128, 0.5)');
             if (player.baseSt > 0)
-                c.drawBar(10, 10 + ((16 + outline) * 2), 200, 16, 'white', player.s / player.baseSt, outline, 'black');
-            c.fillStyle = 'black';
+                c.drawBar(10, 10 + ((16 + outline) * 2), 200, 16, 'white', player.s / player.baseSt, outline, 'rgba(128, 128, 128, 0.5)');
+            c.fillStyle = 'white';
             var line = 66 + (player.baseSt > 0) * (16 + outline);
             c.fillText('Metralleta: ' + ha + ' balas (Pulsa E para activar/desactivar)', 7, line);
             line += 18;
@@ -525,7 +560,7 @@
                 c.font = '30px helvetica neue, helvetica, arial, sans-serif';
                 c.fillText('Perdiste... Pulsa R para volver a intentarlo.', w / 2, h / 2);
                 if (!lose) {
-                    sounds.kill.play();
+                    sounds.kill.playme();
                     document.addEventListener('keydown', e=>{
                         if (e.key === 'r')
                             window.location.reload();
