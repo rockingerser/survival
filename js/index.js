@@ -1,6 +1,6 @@
 !function() {
     'use strict';
-
+    var res = 1;
     const canvas = document.querySelector('canvas');
     const c = canvas.getContext('2d', {
         alpha: true
@@ -34,6 +34,11 @@
     window.onbeforeunload = e=>{
         return false;
     }
+    function loadImage(u) {
+        var image = new Image();
+        image.src = u;
+        return image;
+    }
     function loadSound(u) {
         var sound = new Audio();
         sound.src = u;
@@ -43,6 +48,9 @@
         }
         return sound;
     }
+    const images = {
+        redRadial: loadImage('images/redRadial.png')
+    };
     const sounds = {
         shoot: loadSound('sounds/shoot.wav'),
         kill: loadSound('sounds/kill.wav'),
@@ -118,9 +126,9 @@
         stam: 2000
     };
     player.mh = player.h;
-    var enemies = [];
+    var entities = [];
     function deleteMe(t) {
-        delete enemies[enemies.indexOf(t)];
+        delete entities[entities.indexOf(t)];
     }
     function colliding(o1, o2) {
         var dx = o1.x - o2.x
@@ -182,8 +190,8 @@
             this.h = h;
             if (this.h > 0)
                 this.h = '+' + this.o.h;
-            this.vanishTime = 1000;
-            this.size = 8 + Math.abs(this.h);
+            this.vanishTime = 2000;
+            this.size = 20 + Math.abs(this.h / 2);
             this.vanish = this.vanishTime / 2;
         }
         step() {
@@ -248,7 +256,7 @@
             var dir = Math.atan2(player.x - this.x, player.y - this.y);
             this.dir = dir;
             var typeShot = Number(Math.random() < 0.5);
-            var shoot = (o,r,sp,dir,pres,type,dmg,stun)=>enemies.push(new Bullet(o.c,o.x,o.y,r,sp,dir,0,type,o.c.fillStyle,pres,dmg,stun));
+            var shoot = (o,r,sp,dir,pres,type,dmg,stun)=>entities.push(new Bullet(o.c,o.x,o.y,r,sp,dir,0,type,o.c.fillStyle,pres,dmg,stun));
 
             var push = function(v) {
                 player.vx += Math.sin(dir) * v;
@@ -258,7 +266,7 @@
             var color = Math.floor((0x00ff29 + this.offsetColor) % 2 ** 24).toString(16);
             this.c.fillStyle = (canMove(this)) ? c.fillStyle = ('#000000').substring(0, 7 - color.length) + color : c.fillStyle = 'gray';
             if (this.lh !== this.h && this.lh > this.h) {
-                enemies.push(new Damage(this.c,this.x,this.y,decimal(this.h - this.lh, 1)));
+                entities.push(new Damage(this.c,this.x,this.y,decimal(this.h - this.lh, 1)));
                 this.colchan = colchanTime;
             }
             if (canMove(this)) {
@@ -366,7 +374,7 @@
                     this.destroy = true;
                 }
             } else {
-                var ens = enemies.filter(enemy=>enemy instanceof Enemy);
+                var ens = entities.filter(enemy=>enemy instanceof Enemy);
                 for (let en of ens)
                     if (colliding(this, en)) {
                         if (this.val === 0)
@@ -410,7 +418,7 @@
         moving: null
     }
     function spawnEnemy() {
-        enemies.push(new Enemy(Math.random() * w,Math.random() * h,8 * (enemyFr / 15000 + 1),0.3 * (enemyFr / 15000 + 1),Math.round(5 * enemyFr / 6000 + 1)));
+        entities.push(new Enemy(Math.random() * w,Math.random() * h,8 * (enemyFr / 15000 + 1),0.3 * (enemyFr / 15000 + 1),Math.round(5 * enemyFr / 6000 + 1)));
     }
     player.lh = player.h;
     player.colchan = 0;
@@ -419,6 +427,8 @@
     var watchRec = false;
     var recFrames = 0;
     c.imageSmoothingEnabled = false;
+    const redTime = 15;
+    var red = 0;
     function draw() {
         background('#040404');
         if (keyCode(48) && last48key)
@@ -435,7 +445,7 @@
             frames++;
             enemyFr++;
             var shoot = function(o, type) {
-                enemies.push(new Bullet(c,o.x,o.y,o.r / 3,5,Math.atan2(mouse.x - (o.x), mouse.y - (o.y)),1,type,c.fillStyle,0.04,2 + Math.random() * 4,5));
+                entities.push(new Bullet(c,o.x,o.y,o.r / 3,5,Math.atan2(mouse.x - (o.x), mouse.y - (o.y)),1,type,c.fillStyle,0.04,2 + Math.random() * 4,5));
             }
             move.right = keyCode(39) || keyCode(68);
             move.left = keyCode(37) || keyCode(65);
@@ -490,12 +500,13 @@
                 player.vy = -player.vy;
             }
 
-            for (var en of enemies)
+            for (var en of entities)
                 en.step();
             showHealth(player);
             (canMove(player)) ? c.fillStyle = '#17DF1F' : c.fillStyle = 'gray';
             if (player.lh !== player.h && player.lh > player.h) {
-                enemies.push(new Damage(c,player.x,player.y,decimal(player.h - player.lh, 1)));
+                entities.push(new Damage(c,player.x,player.y,decimal(player.h - player.lh, 1)));
+                red = redTime;
                 player.colchan = colchanTime;
             }
 
@@ -518,7 +529,7 @@
                 c.fillStyle = `rgba(255, 0, 0, ${player.colchan / colchanTime})`;
                 c.fillCircle(Math.round(player.x), Math.round(player.y), Math.round(player.r));
             }
-            enemies = enemies.filter(enemy=>enemy !== undefined);
+            entities = entities.filter(enemy=>enemy !== undefined);
             last69key = !keyCode(69);
             last32key = !keyCode(32);
             c.font = '16px helvetica neue, helvetica, arial, sans-serif';
@@ -570,8 +581,11 @@
                     lose = true;
                 }
                 canvas.style.cursor = "url('cursors/default.png'), auto";
+            } else if (red > 0) {
+                background(`rgba(255, 0, 0, ${red / redTime / 2})`);
             }
             player.colchan--;
+            red--;
             player.lh = player.h;
         }
         if (recording) {
