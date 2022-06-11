@@ -1,6 +1,8 @@
 body {
 	margin: 0;
 	overflow: hidden;
+	font-family: helvetica neue, helvetica, arial, sans-serif;
+	color: white;
 }
 code {
 	background: #80808040;
@@ -12,23 +14,12 @@ canvas {
 	width: 100vw;
 	height: 100vh;
 }
-div {
-	position: absolute;
-	bottom: 0;
-	right: 0;
-	display: inline-flex;
-	margin: 3px;
-	pointer-events: none;
-}
-div * {
-	pointer-events: all;
-}
 input, button {
 	color: white;
 	padding: 5px;
-	margin: inherit;
 	border: none;
 	border-radius: 6px;
+	pointer-events: all;
 }
 input {
 	border: 1px solid white;
@@ -39,10 +30,35 @@ input::placeholder {
 	color: #EEE;
 }
 button {
+	min-width: 25px;
 	background: #44E16D;
 	cursor: pointer;
 	transition: 0.3s;
 }
 button:hover {
 	filter: brightness(1.1);
+	transform: scale(1.2);
+}
+button:active {
+	transform: scale(0.9);
+}
+#bottom * {
+	display: inline;
+}
+#bottom {
+	width: calc(100% - 3px);
+	margin: 3px;
+	min-height: 20px;
+	pointer-events: none;
+	display: inline;
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	z-index: 1;
+}
+#easter {
+	float: right;
+}
+#easter * {
+	pointer-events: all;
 }

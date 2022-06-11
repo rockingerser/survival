@@ -1,6 +1,10 @@
+'use strict';
+var res = 1;
+var cr;
 !function() {
-    'use strict';
-    var res = 1;
+    function n(num) {
+        return num * res;
+    }
     const canvas = document.querySelector('canvas');
     const c = canvas.getContext('2d', {
         alpha: true
@@ -15,22 +19,25 @@
     };
     const colchanTime = 40;
     c.fillCircle = (x,y,radius)=>{
+        x = n(x);
+        y = n(y);
+        radius = n(radius);
         c.beginPath();
         c.arc(x, y, radius, 0, 2 * Math.PI);
         c.fill();
     }
     c.drawLine = (x,y,x2,y2)=>{
         c.beginPath();
-        c.moveTo(x, y);
-        c.lineTo(x2, y2);
+        c.moveTo(n(x), n(y));
+        c.lineTo(n(x2), n(y2));
         c.stroke();
     }
-    function canvasResize() {
-        w = canvas.width = window.innerWidth * window.devicePixelRatio;
-        h = canvas.height = window.innerHeight * window.devicePixelRatio;
-    }
-    canvasResize();
-    window.addEventListener('resize', canvasResize);
+    cr = function(e) {
+    w = canvas.width = window.innerWidth * window.devicePixelRatio * res;
+    h = canvas.height = window.innerHeight * window.devicePixelRatio * res;
+   };
+   cr();
+    window.addEventListener('resize', cr);
     window.onbeforeunload = e=>{
         return false;
     }
@@ -59,8 +66,8 @@
     };
     canvas.addEventListener('mousemove', e=>{
         const rect = canvas.getBoundingClientRect();
-        mouse.x = Math.floor(e.clientX / (rect.width / w)) + rect.left;
-        mouse.y = Math.floor(e.clientY / (rect.height / h)) + rect.top;
+        mouse.x = (Math.floor(e.clientX / (rect.width / w)) / res)+ rect.left;
+        mouse.y = (Math.floor(e.clientY / (rect.height / h)) / res) + rect.top;
     }
     );
     function mousePressed(which) {
@@ -140,15 +147,15 @@
         var lastFillStyle = c.fillStyle;
         if (o !== 0) {
             c.fillStyle = oco;
-            c.fillRect(Math.round(x - o), Math.round(y - o), Math.round(w + (o * 2)), Math.round(h + (o * 2)));
+            c.fillRect(n(Math.round(x - o)), n(Math.round(y - o)), n(Math.round(w + (o * 2))), n(Math.round(h + (o * 2))));
         }
         c.fillStyle = co;
-        c.fillRect(Math.round(x), Math.round(y), Math.round(w * v), Math.round(h));
+        c.fillRect(n(Math.round(x)), n(Math.round(y)), n(Math.round(w * v)), n(Math.round(h)));
         c.fillStyle = lastFillStyle;
     }
 
     function collidingEdges(o) {
-        return o.x + o.r > w || o.x - o.r < 0 || o.y + o.r > h || o.y - o.r < 0;
+        return n(o.x + o.r) > w || n(o.x - o.r) < 0 || n(o.y + o.r) > h || n(o.y - o.r) < 0;
     }
 
     function canMove(o) {
@@ -168,6 +175,7 @@
         }
         o.h -= v;
     }
+   
     function showHealth(o) {
         var r = o.r * 1.5
           , x = o.x - r
@@ -200,10 +208,10 @@
             this.c.fillStyle = this.c.strokeStyle = color;
             this.c.lineWidth = 2;
             this.size += 0.2;
-            this.c.font = `${this.size}px helvetica neue, helvetica, arial, sans-serif`;
+            this.c.font = `${n(this.size)}px helvetica neue, helvetica, arial, sans-serif`;
             this.c.textAlign = 'center';
-            this.c.fillText(this.h, this.x, this.y);
-            this.c.strokeText(this.h, this.x, this.y);
+            this.c.fillText(this.h, n(this.x), n(this.y));
+            this.c.strokeText(this.h, n(this.x), n(this.y));
             this.vanish -= this.vanishTime / 120;
             if (this.vanish <= 0)
                 deleteMe(this);
@@ -276,7 +284,7 @@
                 if (this.type === 3) {
                     this.c.strokeStyle = (this.active) ? 'rgba(255, 0, 0, 0.25)' : 'rgb(255, 0, 0)';
                     var lastStroke = this.c.lineWidth;
-                    this.c.lineWidth = this.r / 5;
+                    this.c.lineWidth = n(this.r / 5);
                     this.c.drawLine(this.x, this.y, this.shootData.x, this.shootData.y);
                     this.c.lineWidth = lastStroke;
                     if (Math.random() < 0.02) {
@@ -387,7 +395,7 @@
             if (collidingEdges(this) || this.destroy)
                 deleteMe(this);
             this.c.strokeStyle = this.c.fillStyle = this.color;
-            this.c.lineWidth = this.r * 1.2;
+            this.c.lineWidth = n(this.r * 1.2);
             if (this.val === 0)
                 this.c.fillCircle(Math.round(this.x), Math.round(this.y), Math.round(this.r));
             else
@@ -532,7 +540,7 @@
             entities = entities.filter(enemy=>enemy !== undefined);
             last69key = !keyCode(69);
             last32key = !keyCode(32);
-            c.font = '16px helvetica neue, helvetica, arial, sans-serif';
+            c.font = `${n(16)}px helvetica neue, helvetica, arial, sans-serif`;
             c.textAlign = 'left';
             var outline = 2
 
@@ -549,17 +557,17 @@
                 c.drawBar(10, 10 + ((16 + outline) * 2), 200, 16, 'white', player.s / player.baseSt, outline, 'rgba(128, 128, 128, 0.5)');
             c.fillStyle = 'white';
             var line = 66 + (player.baseSt > 0) * (16 + outline);
-            c.fillText('Metralleta: ' + ha + ' balas (Pulsa E para activar/desactivar)', 7, line);
+            c.fillText('Metralleta: ' + ha + ' balas (Pulsa E para activar/desactivar)', n(7), n(line));
             line += 18;
-            c.fillText('Balas aturdidoras: ' + sb + ' balas (Pulsa ESPACIO para disparar una)', 7, line)
+            c.fillText('Balas aturdidoras: ' + sb + ' balas (Pulsa ESPACIO para disparar una)', n(7), n(line));
             c.textAlign = 'center';
             if (help[Math.floor(frames / (4 * 60))] !== undefined) {
-                c.fillText(help[Math.floor(frames / (4 * 60))], w / 2, 20);
+                c.fillText(help[Math.floor(frames / (4 * 60))], w / 2, n(20));
             }
-            c.fillText('Créditos a Scratch (https://scratch.mit.edu/) por los sonidos: Wub Beatbox, Crunch, Small Cowbell.', w / 2, h - 6);
+            c.fillText('Créditos a Scratch (https://scratch.mit.edu/) por los sonidos: Wub Beatbox, Crunch, Small Cowbell.', w / 2, h - n(6));
             c.textAlign = 'right';
-            c.fillText('Puntuación: ' + score, w - 10, 20);
-            c.fillText('Tiempo: ' + Math.floor(frames / 60), w - 10, 40);
+            c.fillText('Puntuación: ' + score, w - n(10), n(20));
+            c.fillText('Tiempo: ' + Math.floor(frames / 60), w - n(10), n(40));
 
             if (player.s > 0 && player.baseSt !== player.s)
                 canvas.style.cursor = "url('cursors/not-allowed.png') 16 16, auto";
@@ -568,7 +576,7 @@
 
             if (player.h <= 0) {
                 c.textAlign = 'center';
-                c.font = '30px helvetica neue, helvetica, arial, sans-serif';
+                c.font = `${n(30)}px helvetica neue, helvetica, arial, sans-serif`;
                 c.fillText('Perdiste... Pulsa R para volver a intentarlo.', w / 2, h / 2);
                 if (!lose) {
                     sounds.kill.playme();
@@ -603,4 +611,5 @@
         enemyFr++;
         spawnEnemy();
     }
+    window.addEventListener('scroll', e=> window.scrollTo(0, 0));
 }();
