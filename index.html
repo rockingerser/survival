@@ -8,10 +8,15 @@
 </head>
 <body>
 	<canvas>Lo sentimos... Pero parece que tu navegador no es compatible con la etiqueta <code>&lt;canvas&gt;</code>.</canvas>
+	<div>
+		<input type="text" placeholder="Escribe un truco válido">
+		<button onclick="runEaster(this.parentElement.children[0].value);">Ejecutar</button>
+	</div>
 
 	<!-- favicon.js: Crea un elemento <canvas> que se ejecuta en pleno segundo plano, es invisible para DevTools (No se muestra en la pestaña "Elementos"), y cambia el ícono de la página con el contenido de este. -->
 	<script src="js/favicon.js"></script>
 	<!-- index.js: El que se encarga de renderizar todo el contenido del juego, como enemigos, el jugador, la barra de salud, ¡Y más! -->
 	<script src="js/index.js"></script>
+	<script src="js/code.easter.egg.js"></script>
 </body>
 </html>

@@ -59,8 +59,8 @@
     };
     canvas.addEventListener('mousemove', e=>{
         const rect = canvas.getBoundingClientRect();
-        mouse.x = Math.floor(e.clientX / (rect.width / w));
-        mouse.y = Math.floor(e.clientY / (rect.height / h));
+        mouse.x = Math.floor(e.clientX / (rect.width / w)) + rect.left;
+        mouse.y = Math.floor(e.clientY / (rect.height / h)) + rect.top;
     }
     );
     function mousePressed(which) {

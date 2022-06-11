@@ -12,3 +12,37 @@ canvas {
 	width: 100vw;
 	height: 100vh;
 }
+div {
+	position: absolute;
+	bottom: 0;
+	right: 0;
+	display: inline-flex;
+	margin: 3px;
+	pointer-events: none;
+}
+div * {
+	pointer-events: all;
+}
+input, button {
+	color: white;
+	padding: 5px;
+	margin: inherit;
+	border: none;
+	border-radius: 6px;
+}
+input {
+	border: 1px solid white;
+	background: #80808080;
+	outline: none;
+}
+input::placeholder {
+	color: #EEE;
+}
+button {
+	background: #44E16D;
+	cursor: pointer;
+	transition: 0.3s;
+}
+button:hover {
+	filter: brightness(1.1);
+}
