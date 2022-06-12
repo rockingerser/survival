@@ -12,10 +12,20 @@ var cr;
 
     var w;
     var h;
+    cr = function(e) {
+    w = canvas.width = window.innerWidth * window.devicePixelRatio * res;
+    h = canvas.height = window.innerHeight * window.devicePixelRatio * res;
+   };
+   cr();
     const keys = {};
     const mouse = {
-        x: 0,
-        y: 0
+        x: w / 2,
+        y: h / 2,
+        cursor: {
+            img: null,
+            x: 0,
+            y: 0
+        }
     };
     const colchanTime = 40;
     c.fillCircle = (x,y,radius)=>{
@@ -32,11 +42,6 @@ var cr;
         c.lineTo(n(x2), n(y2));
         c.stroke();
     }
-    cr = function(e) {
-    w = canvas.width = window.innerWidth * window.devicePixelRatio * res;
-    h = canvas.height = window.innerHeight * window.devicePixelRatio * res;
-   };
-   cr();
     window.addEventListener('resize', cr);
     window.onbeforeunload = e=>{
         return false;
@@ -56,18 +61,20 @@ var cr;
         return sound;
     }
     const images = {
-        redRadial: loadImage('images/redRadial.png')
     };
     const sounds = {
         shoot: loadSound('sounds/shoot.wav'),
         kill: loadSound('sounds/kill.wav'),
         hurt: loadSound('sounds/hurt.wav'),
-        hurtEnemy: loadSound('sounds/hurt.enemy.wav')
+        hurtEnemy: loadSound('sounds/hurt.enemy.wav'),
+        stomp: loadSound('sounds/stomp.wav')
     };
-    canvas.addEventListener('mousemove', e=>{
+    canvas.addEventListener('mousedown', e=> e.target.requestPointerLock());
+    canvas.requestPointerLock();
+    document.addEventListener('mousemove', e=>{
         const rect = canvas.getBoundingClientRect();
-        mouse.x = (Math.floor(e.clientX / (rect.width / w)) / res)+ rect.left;
-        mouse.y = (Math.floor(e.clientY / (rect.height / h)) / res) + rect.top;
+        mouse.x += e.movementX;
+        mouse.y += e.movementY;
     }
     );
     function mousePressed(which) {
@@ -75,16 +82,16 @@ var cr;
             return mouse[which];
         else {
             mouse[which] = false;
-            Function('mouse', `
-            document.addEventListener('mousedown', e=> {
+            Function('mouse, canvas', `
+            canvas.addEventListener('mousedown', e=>{
                 if (e.button === ${which})
                     mouse[${which}] = true;
             });
-            document.addEventListener('mouseup', e=> {
+            canvas.addEventListener('mouseup', e=>{
                 if (e.button === ${which})
                     mouse[${which}] = false;
             });
-            `)(mouse);
+            `)(mouse, canvas);
             return mousePressed(which);
         }
     }
@@ -94,11 +101,11 @@ var cr;
         else {
             keys[kc] = false;
             Function('keys', `
-            document.addEventListener('keydown', e=> {
+            document.addEventListener('keydown', e=>{
                 if (e.keyCode === ${kc})
                     keys[${kc}] = true;
             });
-            document.addEventListener('keyup', e=> {
+            document.addEventListener('keyup', e=>{
                 if (e.keyCode === ${kc})
                     keys[${kc}] = false;
             });
@@ -117,8 +124,8 @@ var cr;
         return Number.parseFloat(n).toFixed(l);
     }
     var player = {
-        x: 0,
-        y: 0,
+        x: w / 2,
+        y: h / 2,
         vx: 0,
         vy: 0,
         friction: 0.95,
@@ -175,7 +182,19 @@ var cr;
         }
         o.h -= v;
     }
-   
+    function cursor(u, x, y) {
+        if (!u) 
+            return {
+                img: mouse.cursor.img,
+                x: mouse.cursor.x,
+                y: mouse.cursor.y
+            };
+        var image = new Image();
+        image.src = u;
+        mouse.cursor.img = image;
+        mouse.cursor.x = x || 0;
+        mouse.cursor.y = y || 0;    
+    }
     function showHealth(o) {
         var r = o.r * 1.5
           , x = o.x - r
@@ -269,7 +288,7 @@ var cr;
             var push = function(v) {
                 player.vx += Math.sin(dir) * v;
                 player.vy += Math.cos(dir) * v;
-            }
+            };
 
             var color = Math.floor((0x00ff29 + this.offsetColor) % 2 ** 24).toString(16);
             this.c.fillStyle = (canMove(this)) ? c.fillStyle = ('#000000').substring(0, 7 - color.length) + color : c.fillStyle = 'gray';
@@ -316,11 +335,12 @@ var cr;
 
                             stun(player, 3 * 60);
                             damage(player, 20);
+                            shake += 200;
                         }
 
                     } else if (Math.random() <= 0.01) {
                         push((this.v + 1) ** 2);
-
+                        shake += 2;
                         damage(player, 0.5 + Math.random() * 2);
                     }
             }
@@ -373,7 +393,7 @@ var cr;
                 if (colliding(this, player)) {
                     player.vx += Math.sin(dir) * (this.v);
                     player.vy += Math.cos(dir) * (this.v);
-
+                    shake += this.v;
                     if (this.val === 0) {
                         damage(player, this.dmg);
 
@@ -404,8 +424,6 @@ var cr;
     }
     var ft = 0;
     var score = 0;
-    player.x = Math.round(w / 2 - (player.r / 2));
-    player.y = Math.round(h / 2 - (player.r / 2));
     var frames = -1;
     var enemyFr = frames;
     var rgf = 0;
@@ -437,8 +455,9 @@ var cr;
     c.imageSmoothingEnabled = false;
     const redTime = 15;
     var red = 0;
+    var shake = 0;
     function draw() {
-        background('#040404');
+        c.clearRect(0, 0, w, h);
         if (keyCode(48) && last48key)
             recording = !recording;
         if (keyCode(49) && last49key) {
@@ -452,6 +471,23 @@ var cr;
         } else {
             frames++;
             enemyFr++;
+            shake /= 1.06;
+            var ranShake = function() {
+                return Math.round(-shake + Math.random() * (shake * 2));
+            }
+            c.translate(n(ranShake()), n(ranShake()));
+            mouse.x += ranShake();
+            mouse.y += ranShake();
+            if (shake >= 10 && frames % Math.max(1, Math.round(100 / shake)) === 0)
+                sounds.stomp.playme();
+            if (mouse.x < 0)
+                mouse.x = 0;
+            else if (n(mouse.x) > w)
+                mouse.x = w / res;
+            if (mouse.y < 0)
+                mouse.y = 0;
+            else if (n(mouse.y) > h)
+                mouse.y = h / res;
             var shoot = function(o, type) {
                 entities.push(new Bullet(c,o.x,o.y,o.r / 3,5,Math.atan2(mouse.x - (o.x), mouse.y - (o.y)),1,type,c.fillStyle,0.04,2 + Math.random() * 4,5));
             }
@@ -570,9 +606,9 @@ var cr;
             c.fillText('Tiempo: ' + Math.floor(frames / 60), w - n(10), n(40));
 
             if (player.s > 0 && player.baseSt !== player.s)
-                canvas.style.cursor = "url('cursors/not-allowed.png') 16 16, auto";
+                cursor('cursors/not-allowed.png', -16, -16);
             else if (player.baseSt === 0)
-                canvas.style.cursor = "url('cursors/shoot.png') 16 16, auto";
+                cursor('cursors/shoot.png', -16, -16);
 
             if (player.h <= 0) {
                 c.textAlign = 'center';
@@ -588,7 +624,7 @@ var cr;
                     window.onbeforeunload = null;
                     lose = true;
                 }
-                canvas.style.cursor = "url('cursors/default.png'), auto";
+                cursor('cursors/default.png', 0, 0);
             } else if (red > 0) {
                 background(`rgba(255, 0, 0, ${red / redTime / 2})`);
             }
@@ -603,6 +639,8 @@ var cr;
         }
         last48key = !keyCode(48);
         last49key = !keyCode(49);
+        c.setTransform(1, 0, 0, 1, 0, 0);
+        c.drawImage(mouse.cursor.img, n(mouse.x + mouse.cursor.x), n(mouse.y + mouse.cursor.y), n(32), n(32));
         rqstAnimFrame = window.requestAnimationFrame(draw);
     }
     draw();

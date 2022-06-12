@@ -2,6 +2,7 @@ body {
 	margin: 0;
 	overflow: hidden;
 	font-family: helvetica neue, helvetica, arial, sans-serif;
+	background: #040404;
 	color: white;
 }
 code {
@@ -28,6 +29,7 @@ input {
 }
 input::placeholder {
 	color: #EEE;
+	font-style: italic;
 }
 button {
 	min-width: 25px;
