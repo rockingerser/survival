@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-	<title>¡Sobrevive!</title>
-	<link rel="stylesheet" href="style/index.css">
 	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
+	<title>¡Sobrevive!</title>
+	<link rel="stylesheet" type="text/css" href="style/index.css">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-	<canvas>Lo sentimos... Pero parece que tu navegador no es compatible con la etiqueta <code>&lt;canvas&gt;</code>.</canvas>
+	<canvas id="game" tabindex="0">Lo sentimos... Pero parece que tu navegador no es compatible con la etiqueta <code>&lt;canvas&gt;</code>.</canvas>
 	<div id="bottom">
 		<div id="res-ctrl">
 			<span>Resolución</span>
-			<button onclick="res+=res/10;cr();">+</button>
-			<button onclick="res-=res/10;cr();">-</button>
-			<button onclick="res=1;cr();">=</button>
+			<button type="button" type="button" onclick="res+=res/10;cr();">+</button>
+			<button type="button" onclick="res-=res/10;cr();">-</button>
+			<button type="button" onclick="res=1;cr();">=</button>
 		</div>
 	    <div id="easter">
 		    <input type="text" placeholder="Escribe un truco válido">
-		    <button onclick="runEaster(this.parentElement.children[0].value);">Ejecutar</button>
+		    <button type="button" onclick="runEaster(this.parentElement.children[0].value);">Ejecutar</button>
 	    </div>
 	</div>
 	<!-- favicon.js: Crea un elemento <canvas> que se ejecuta en pleno segundo plano, es invisible para DevTools (No se muestra en la pestaña "Elementos"), y cambia el ícono de la página con el contenido de este. -->

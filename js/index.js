@@ -1,11 +1,13 @@
 'use strict';
 var res = 1;
 var cr;
-!function() {
+var requestAnimFrame = window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.requestAnimationFrame,
+    cancelAnimFrame = window.webkitCancelAnimationFrame || window.mozCancelAnimationFrame || window.cancelAnimationFrame;
+//!function() {
     function n(num) {
         return num * res;
     }
-    const canvas = document.querySelector('canvas');
+    const canvas = document.getElementById('game');
     const c = canvas.getContext('2d', {
         alpha: true
     });
@@ -70,7 +72,7 @@ var cr;
         stomp: loadSound('sounds/stomp.wav')
     };
     canvas.addEventListener('mousedown', e=> e.target.requestPointerLock());
-    canvas.requestPointerLock();
+    //canvas.requestPointerLock();
     document.addEventListener('mousemove', e=>{
         const rect = canvas.getBoundingClientRect();
         mouse.x += e.movementX;
@@ -100,16 +102,16 @@ var cr;
             return keys[kc];
         else {
             keys[kc] = false;
-            Function('keys', `
-            document.addEventListener('keydown', e=>{
+            Function('keys, canvas', `
+            canvas.addEventListener('keydown', e=>{
                 if (e.keyCode === ${kc})
                     keys[${kc}] = true;
             });
-            document.addEventListener('keyup', e=>{
+            canvas.addEventListener('keyup', e=>{
                 if (e.keyCode === ${kc})
                     keys[${kc}] = false;
             });
-            `)(keys);
+            `)(keys, canvas);
             return keyCode(kc);
         }
     }
@@ -335,7 +337,7 @@ var cr;
 
                             stun(player, 3 * 60);
                             damage(player, 20);
-                            shake += 200;
+                            shake += 50;
                         }
 
                     } else if (Math.random() <= 0.01) {
@@ -442,7 +444,7 @@ var cr;
         up: null,
         down: null,
         moving: null
-    }
+    };
     function spawnEnemy() {
         entities.push(new Enemy(Math.random() * w,Math.random() * h,8 * (enemyFr / 15000 + 1),0.3 * (enemyFr / 15000 + 1),Math.round(5 * enemyFr / 6000 + 1)));
     }
@@ -616,12 +618,10 @@ var cr;
                 c.fillText('Perdiste... Pulsa R para volver a intentarlo.', w / 2, h / 2);
                 if (!lose) {
                     sounds.kill.playme();
-                    document.addEventListener('keydown', e=>{
+                    canvas.addEventListener('keydown', e=>{
                         if (e.key === 'r')
                             window.location.reload();
-                    }
-                    );
-                    window.onbeforeunload = null;
+                    });
                     lose = true;
                 }
                 cursor('cursors/default.png', 0, 0);
@@ -640,8 +640,8 @@ var cr;
         last48key = !keyCode(48);
         last49key = !keyCode(49);
         c.setTransform(1, 0, 0, 1, 0, 0);
-        c.drawImage(mouse.cursor.img, n(mouse.x + mouse.cursor.x), n(mouse.y + mouse.cursor.y), n(32), n(32));
-        rqstAnimFrame = window.requestAnimationFrame(draw);
+        c.drawImage(mouse.cursor.img, n(Math.round(mouse.x + mouse.cursor.x)), n(Math.round(mouse.y + mouse.cursor.y)), n(Math.round(32)), n(Math.round(32)));
+        rqstAnimFrame = window.requestAnimFrame(draw);
     }
     draw();
 
@@ -650,4 +650,4 @@ var cr;
         spawnEnemy();
     }
     window.addEventListener('scroll', e=> window.scrollTo(0, 0));
-}();
+//}();

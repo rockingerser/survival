@@ -33,6 +33,9 @@ function runEaster(v) {
 		    	iterations: 5
 		    });
 		    break;
+		case 'consola':
+		    window.alert(`Consola:\n<div><textarea spellcheck="false" autocomplete="off">window.alert('¡Hola Mundo!');</textarea><button onclick="try { var t = this.parentElement; Function(t.children[0].value)(); } catch (e) { t.querySelector('#error').textContent = '❌ JavaScript Error: ' + e; }">Ejecutar</button><p id="error" style="color: red; font-family: courier new, courier, monospace; font-size: 12px;"></p></div>`);
+		    break;
 		default:
 		    window.alert('Código inválido');
 	}
