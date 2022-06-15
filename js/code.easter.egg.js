@@ -6,11 +6,13 @@ input.addEventListener('keydown', e=> {
 });
 function runEaster(v) {
 	switch (v.toLowerCase()) {
-		case 'sus':
-		    case 'sussy baka':
-		        case 'amogus':
-		            window.alert('Un meme muy malo... 0/10\n<img src="images/no.sus.jpg" style="width:100%;">');
-		            break;
+		case 'tonto':
+			case 'tonta':
+				var img = new Image();
+				img.src = 'https://pm1.narvii.com/6052/6464824ade9216a2e721258a3096b58dbc04bcdd_hq.jpg';
+				img.style = 'position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 100; opacity: 0.1; pointer-events: none;';
+				document.body.appendChild(img);
+				break;
 		case 'temblor':
 		    window.alert('Empezamos con la locura bbaababababababbababab');
 		    function d() {

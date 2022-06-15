@@ -1,30 +1,120 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-	<meta charset="utf-8">
-	<title>¡Sobrevive!</title>
-	<link rel="stylesheet" type="text/css" href="style/index.css">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body>
-	<canvas id="game" tabindex="0">Lo sentimos... Pero parece que tu navegador no es compatible con la etiqueta <code>&lt;canvas&gt;</code>.</canvas>
-	<div id="bottom">
-		<div id="res-ctrl">
-			<span>Resolución</span>
-			<button type="button" type="button" onclick="res+=res/10;cr();">+</button>
-			<button type="button" onclick="res-=res/10;cr();">-</button>
-			<button type="button" onclick="res=1;cr();">=</button>
-		</div>
-	    <div id="easter">
-		    <input type="text" placeholder="Escribe un truco válido">
-		    <button type="button" onclick="runEaster(this.parentElement.children[0].value);">Ejecutar</button>
-	    </div>
-	</div>
-	<!-- favicon.js: Crea un elemento <canvas> que se ejecuta en pleno segundo plano, es invisible para DevTools (No se muestra en la pestaña "Elementos"), y cambia el ícono de la página con el contenido de este. -->
-	<script src="js/favicon.js"></script>
-	<!-- index.js: El que se encarga de renderizar todo el contenido del juego, como enemigos, el jugador, la barra de salud, ¡Y más! -->
-	<script src="js/index.js"></script>
-	<script src="js/code.easter.egg.js"></script>
-	<script src="js/replace.fun.js"></script>
-</body>
+    <head>
+        <meta charset="utf-8">
+        <title>¡Sobrevive!</title>
+        <link rel="stylesheet" href="style/index.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <script>
+            var requestAnimFrame = window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.requestAnimationFrame
+              , cancelAnimFrame = window.webkitCancelAnimationFrame || window.mozCancelAnimationFrame || window.cancelAnimationFrame;
+        </script>
+        <img src="images/game.preview.png" class="thumbnail" id="game" alt="Game thumbnail">
+        <div class="bkg">
+            <div>
+                <h1 style="font-size: 2.5em;">Supervivencia</h1>
+                <button type="button" id="start" class="neon-button" onclick="this.parentElement.parentElement.remove();start();">Jugar</button>
+                <canvas title="¡Cliqueame!" width="200" height="100" style="position: absolute; bottom: -100px; width: 200px; height: 100px; cursor: pointer;"></canvas>
+                <script>
+                    !function() {
+                        var canvas = document.querySelector('canvas');
+                        var c = canvas.getContext('2d');
+                        var r = 19
+                          , g = 222
+                          , b = 15;
+                        c.ellipse2 = function(x, y, rx, ry, sa, en, cl) {
+                            sa = sa || 0;
+                            en = en || Math.PI * 2;
+                            cl = cl || false;
+                            c.beginPath();
+                            c.ellipse(x, y, rx, ry, sa, en, cl);
+                            c.fill();
+                        }
+                        ;
+                        c.fillCircle = function(x, y, r) {
+                            c.beginPath();
+                            c.arc(x, y, r, 0, Math.PI * 2, false);
+                            c.fill();
+                        }
+                        function resize() {
+                            canvas.style.left = innerWidth / 2 - canvas.offsetWidth / 2 + 'px';
+                        }
+						resize();
+						function appear() {
+							canvas.style.bottom = 0;
+							canvas.animate([
+								{ bottom: '-100px'},
+								{ bottom: 0 }
+							], {
+								duration: 400
+							});
+							document.removeEventListener('mousemove', appear);
+						}
+                        function draw(e) {
+							var dpr = devicePixelRatio;
+                            var center = {
+                                x: canvas.width / 2,
+                                y: canvas.height / 2
+                            };
+                            var eyes = {
+                                offset: {
+                                    x: 40,
+                                    y: -60
+                                },
+                                size: 30,
+                                size2: 12
+                            };
+
+                            c.clearRect(0, 0, canvas.width, canvas.height);
+                            c.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                            c.ellipse2(center.x, center.y * 3, center.x, center.y * 3);
+                            c.fillStyle = 'white';
+                            var x = center.x - eyes.offset.x
+                              , x2 = center.x + eyes.offset.x
+                              , y = center.y * 2 + eyes.offset.y
+                              , ma = eyes.size - eyes.size2;
+                            c.fillCircle(x, y, eyes.size);
+                            c.fillCircle(x2, y, eyes.size);
+                            c.fillStyle = 'black';
+                            var dir = Math.atan2(e.clientX - (x + canvas.offsetLeft), e.clientY - (y + canvas.offsetTop))
+                              , dir2 = Math.atan2(e.clientX - (x2 + canvas.offsetLeft), e.clientY - (y + canvas.offsetTop));
+                            c.fillCircle(x + (Math.sin(dir) * ma), y + (Math.cos(dir) * ma), eyes.size2);
+                            c.fillCircle(x2 + (Math.sin(dir2) * ma), y + (Math.cos(dir2) * ma), eyes.size2);
+                        }
+                        //draw();
+                        addEventListener('resize', resize);
+                        canvas.addEventListener('mousedown', e=>{
+                            r = Math.random() * 255;
+                            g = Math.random() * 255;
+                            b = Math.random() * 255;
+                        }
+                        );
+                        canvas.addEventListener('contextmenu', e=>e.preventDefault());
+                        document.addEventListener('mousemove', draw);
+						document.addEventListener('mousemove', appear);
+                    }();
+                </script>
+            </div>
+        </div>
+        <div id="bottom">
+            <div id="res-ctrl">
+                <span>Resolución</span>
+                <button type="button" class="button" onclick="res+=res/10;cr();">+</button>
+                <button type="button" class="button" onclick="res-=res/10;cr();">-</button>
+                <button type="button" class="button" onclick="res=1;cr();">=</button>
+            </div>
+            <div id="easter">
+                <input type="text" placeholder="Escribe un truco válido">
+                <button type="button" class="button" onclick="runEaster(this.parentElement.children[0].value);">Ejecutar</button>
+            </div>
+        </div>
+        <!-- favicon.js: Crea un elemento <canvas> que se ejecuta en pleno segundo plano, es invisible para DevTools (No se muestra en la pestaña "Elementos"), y cambia el ícono de la página con el contenido de este. -->
+        <script src="js/favicon.js"></script>
+        <!-- index.js: El que se encarga de renderizar todo el contenido del juego, como enemigos, el jugador, la barra de salud, ¡Y más! -->
+        <script src="js/index.js"></script>
+        <script src="js/code.easter.egg.js"></script>
+        <script src="js/replace.fun.js"></script>
+    </body>
 </html>
