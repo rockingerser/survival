@@ -1,7 +1,30 @@
 'use strict';
 var res = 1;
 var cr;
-
+function width() {
+    return innerWidth / document.body.style.zoom;
+}
+function height() {
+    return innerHeight / document.body.style.zoom;
+}
+function zoom(n) {
+    if (n)
+        document.body.style.zoom = n;
+        cr();
+    return Number(document.body.style.zoom);
+}
+zoom(1);
+function expected(item1, item2) {
+    var an = function(string) {
+        return ['a', 'e', 'i', 'o', 'u'].includes((string.charAt(0).toLowerCase())) ? 'an' : 'a';
+    };
+    return new TypeError(`Expected ${an(item1)} ${item1} but getting ${an(item2)} ${item2}`);
+}
+function randomItem(array) {
+    if (!(array instanceof Array))
+        throw expected('Array', typeof array);
+    return array[Math.floor(Math.random() * array.length)];
+}
 function start() {
     const canvas = document.createElement('canvas');
     try {
@@ -18,10 +41,12 @@ function start() {
         var w;
         var h;
         cr = function(e) {
-            w = canvas.width = window.innerWidth * window.devicePixelRatio * res;
-            h = canvas.height = window.innerHeight * window.devicePixelRatio * res;
-        }
-        ;
+            w = canvas.width = width() * res;
+            h = canvas.height = height() * res;
+            canvas.style.width = width() + 'px';
+            canvas.style.height = height() + 'px';
+        };
+        
         cr();
         const keys = {};
         const mouse = {
@@ -311,7 +336,7 @@ function start() {
                         this.c.lineWidth = n(this.r / 5);
                         this.c.drawLine(this.x, this.y, this.shootData.x, this.shootData.y);
                         this.c.lineWidth = lastStroke;
-                        if (Math.random() < 0.02) {
+                        if (Math.random() < 0.1) {
                             this.active = true;
                             this.shootData.x = player.x;
                             this.shootData.y = player.y;
@@ -330,7 +355,8 @@ function start() {
                         else if (this.type === 3) {
                             this.active = false;
                             shoot(this, this.r / 1.5, this.v * 150, Math.atan2(this.shootData.x - this.x, this.shootData.y - this.y), 0.01, typeShot, 40, 1.5);
-                        }
+                        } else
+                            shoot(this, this.r / 3, this.v * 6, this.dir, 0.1, typeShot, 2 + Math.random() * 4, 1);
                     }
 
                     if (colliding(this, player))
@@ -461,6 +487,7 @@ function start() {
         const redTime = 15;
         var red = 0;
         var shake = 0;
+        var intText;
         function draw() {
             c.clearRect(0, 0, w, h);
             if (keyCode(48) && last48key)
@@ -620,6 +647,9 @@ function start() {
                     c.font = `${n(30)}px helvetica neue, helvetica, arial, sans-serif`;
                     c.fillText('Perdiste... Pulsa R para volver a intentarlo.', w / 2, h / 2);
                     if (!lose) {
+                        intText = (player.s) ? '🧟‍♂️🔪🥴' : '🧟‍♂️🔪😀';
+                        document.head.querySelector('title').textContent = intText + ' ' +  randomItem(['😥', '😭', ':(', '＞﹏＜', '╯︿╰', 'ಥ_ಥ', 'X﹏X', '◑﹏◐', '⊙﹏⊙∥', '·_·', '.______.', '(•ˋ _ ˊ•)']);
+                        document.body.style.filter = 'grayscale(1)';
                         sounds.kill.playme();
                         canvas.addEventListener('keydown', e=>{
                             if (e.key === 'r')
@@ -628,10 +658,11 @@ function start() {
                         );
                         lose = true;
                     }
+                    c.fillText(intText, w / 2, (h / 2) - n(40));
                     cursor('cursors/default.png', 0, 0);
-                } else if (red > 0) {
-                    background(`rgba(255, 0, 0, ${red / redTime / 2})`);
                 }
+                if (red > 0)
+                    background(`rgba(255, 0, 0, ${red / redTime / 2})`);
                 player.colchan--;
                 red--;
                 player.lh = player.h;

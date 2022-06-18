@@ -15,9 +15,16 @@
         <div class="bkg">
             <div>
                 <h1 style="font-size: 2.5em;">Supervivencia</h1>
-                <button type="button" id="start" class="neon-button" onclick="this.parentElement.parentElement.remove();start();">Jugar</button>
+                <button type="button" id="start" class="neon-button" onclick="key();">Jugar</button>
                 <canvas title="¡Cliqueame!" width="200" height="100" style="position: absolute; bottom: -100px; width: 200px; height: 100px; cursor: pointer;"></canvas>
                 <script>
+                        function key(e) {
+                            if (e === undefined || e.key !== undefined) {
+                                document.querySelector('.bkg').remove();start();
+                                document.removeEventListener('keydown', key);
+                            }
+                        }
+                        document.addEventListener('keydown', key);
                     !function() {
                         var canvas = document.querySelector('canvas');
                         var c = canvas.getContext('2d');
@@ -104,6 +111,12 @@
                 <button type="button" class="button" onclick="res+=res/10;cr();">+</button>
                 <button type="button" class="button" onclick="res-=res/10;cr();">-</button>
                 <button type="button" class="button" onclick="res=1;cr();">=</button>
+            </div>
+            <div id="zoom-ctrl">
+                <span>Zoom</span>
+                <button type="button" class="button" onclick="zoom(zoom()+zoom()/10);">+</button>
+                <button type="button" class="button" onclick="zoom(zoom()-zoom()/10);">-</button>
+                <button type="button" class="button" onclick="zoom(1);">=</button>
             </div>
             <div id="easter">
                 <input type="text" placeholder="Escribe un truco válido">
